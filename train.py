@@ -65,13 +65,14 @@ def feature_eng(data):
     # Remove rows with missing values (NaN) which result from rolling calculations and shifting
     data.dropna(inplace=True)
 
-    features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Rolling_Mean', 'Spread']
+    features = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Rolling_Mean', 'Spread']
     X = data[features]
     y = data['Next_Day_Return']
     return X, y
 
 # ====================== MAIN ======================
 data = import_data()
+print(data)
 X, y = feature_eng(data)
 model = train_model(X, y)
 save_model(model)

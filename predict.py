@@ -17,7 +17,7 @@ window = 20    # rolling window for moving average
 threshold = 0.005  # threshold for decision making
 capital = 10000  # starting capital in USD
 transaction_fee_rate = 0.01  # 1% fee
-features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Rolling_Mean', 'Spread']
+features = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Rolling_Mean', 'Spread']
 portfolio_filename = "portfolio.json"
 current_price = 999999999999999.99
 model_path = "tsla_model.pkl" 
@@ -31,23 +31,29 @@ def get_model(path):
     return model
 
 def get_data():
-    data = yf.download(ticker, period=period, interval=interval)
+    tckr = yf.Ticker(ticker)
+    data = tckr.history(period=period, interval=interval, auto_adjust=False)
     if data.empty:
         raise ValueError("No data retrived. Check network connection.")
     
     last_20_adj_close = data["Adj Close"].tail(window)
     rolling_mean = last_20_adj_close.rolling(window=window).mean().iloc[-1]
 
-    yesterday = data.iloc[-1]
+    yesterday = data.tail(1).copy()
+    print(yesterday)
+    
     yesterday["Rolling_Mean"] = rolling_mean
-    yesterday["Spread"] = (yesterday["Adj Close"] - rolling_mean) / rolling_mean
-    return yesterday[features]
+    yesterday["Spread"] = (yesterday.iloc[0]["Adj Close"] - rolling_mean) / rolling_mean
+
+    print(yesterday)
+
+    return yesterday
 
 # Run model prediction
 def predict(model, data):
     latest_features = data[features].values.reshape(1, -1)
     predicted_return = model.predict(latest_features)[0]
-    spread = data['Spread']
+    spread = data.iloc[0]['Spread']
     return predicted_return, spread
 
 # Buy/Sell/Hold decision
@@ -58,6 +64,7 @@ def make_decision(predicted_return, spread):
     # - If price is above the moving average (spread is positive) and we predict a downward move,
     #   then it might be overvalued -> signal to Sell.
     # - Otherwise, Hold.
+    print(spread)
 
     if predicted_return > threshold and spread < -threshold:
         decision = "Buy"
@@ -123,7 +130,7 @@ def simulate_order(decision, current_price):
             buy_amount_after_fee = buy_amount * (1 - transaction_fee_rate)
             portfolio["capital"] -= buy_amount_after_fee
             portfolio["shares"] += shares_to_buy
-            update_portfolio(portfolio)
+            # update_portfolio(portfolio)
             return f"Buy: ${buy_amount_after_fee:.2f} worth of shares."
     elif decision == "Sell":
         # Simulate selling 10% of a placeholder holding.

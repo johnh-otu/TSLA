@@ -65,7 +65,6 @@ def make_decision(predicted_return, spread):
     #   then it might be overvalued -> signal to Sell.
     # - Otherwise, Hold.
     print(spread)
-
     if predicted_return > threshold and spread < -threshold:
         decision = "Buy"
     elif predicted_return < -threshold and spread > threshold:
@@ -124,6 +123,7 @@ def simulate_order(decision, current_price):
         shares_to_buy = int(buy_amount / current_price)
 
         if shares_to_buy == 0:
+            print(f"Not enough capital to buy shares. ({buy_amount}, {current_price})")
             return "Hold: No transaction will be made."
         else:
             buy_amount = shares_to_buy * current_price
@@ -137,6 +137,7 @@ def simulate_order(decision, current_price):
         num_shares_held = portfolio["shares"]
 
         if (num_shares_held < 1):
+            print("No shares to sell.")
             return "Hold: No transaction will be made."
 
         shares_to_sell = max(int(num_shares_held * sell_ratio), 1)

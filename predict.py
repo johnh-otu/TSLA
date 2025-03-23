@@ -4,6 +4,7 @@ import json
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import pickle
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -19,15 +20,15 @@ transaction_fee_rate = 0.01  # 1% fee
 features = ['Open', 'High', 'Low', 'Close', 'Volume', 'Rolling_Mean', 'Spread']
 portfolio_filename = "portfolio.json"
 current_price = 999999999999999.99
-model_path = "" # TODO: Add model path
+model_path = "tsla_model.pkl" 
 sell_ratio = 0.4 # sell 40% of shares (originally 10%)
 buy_ratio = 0.1 # buy with 10% of capital
 
-# TODO: Load model
+# Load model
 def get_model(path):
-    # use libjar/pickle to load model
+    model = pickle.load(open(model_path, "rb"))
     print(f"loaded model from {path}")
-    # return model
+    return model
 
 def get_data():
     data = yf.download(ticker, period=period, interval=interval)
@@ -144,15 +145,13 @@ def get_current_price():
     else:
         return current_price
 
-def main():
-    # Use model with recent data to predict today's return and spread
-    pred_return, spread = predict(get_model(model_path), get_data())
-    # Make decision (Buy, Sell, Hold)
-    decision = make_decision(pred_return, spread)
+# ====================== MAIN ======================
 
-    # Get current price for buy/sell orders
-    if decision != "Hold":
-        current_price = get_current_price()
-
-    print(simulate_order(decision, current_price))
-    return 0
+# Use model with recent data to predict today's return and spread
+pred_return, spread = predict(get_model(model_path), get_data())
+# Make decision (Buy, Sell, Hold)
+decision = make_decision(pred_return, spread)
+# Get current price for buy/sell orders
+if decision != "Hold":
+    current_price = get_current_price()
+print(simulate_order(decision, current_price))
